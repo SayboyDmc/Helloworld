@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <title>热点事件排行榜</title>
+</head>
+<body>
+<div align="center">
+    <form>
+        <input type="text" name="keyword">
+        <input type="button" value="查询" name="button">
+    </form>
+</div>
+<p align="center">
+<h1 align="center">热点事件排行榜</h1>
+
+<table class="tab" align="center" border="1" width="75%">
+    <thead>
+    <tr>
+        <th>关键词</th>
+        <th>搜索指数</th>
+        <th>创建时间</th>
+    </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<script type="text/javascript" src="lib/jquery/jquery-3.2.1.min.js"></script>
+<script type="text/javascript" src="lib/datatables/1.10.15/jquery.dataTables.min.js"></script>
+<script type="text/javascript" src="lib/jquery_validation/jquery.validate.min.js"></script>
+<script type="text/javascript" src="lib/jquery_form/jquery.form.js"></script>
+<script type="text/javascript">
+    $(function () {
+        var userMange = {
+            getQueryCondition: function (data) {
+                var param = {};
+                param.keyword = $("input[name='keyword']").val();
+                param.start = data.start;
+                param.draw = data.draw;
+                return param;
+            }
+        };
+        var table = $('.tab').DataTable({
+            "language": {
+                "lengthMenu": "每页 _MENU_ 条记录",
+                "zeroRecords": "没有找到记录",
+// "info": "第 _PAGE_ 页 ( 总共 _PAGES_ 页 )",
+                "info": "",
+                "infoEmpty": "无记录",
+                "infoFiltered": "(从 _MAX_ 条记录过滤)",
+                "oPaginate": {
+                    "sFirst": "首页",
+                    "sPrevious": "前一页",
+                    "sNext": "后一页",
+                    "sLast": "尾页",
+                    "next":"&nbsp;&nbsp;",
+                    "previous":"&nbsp;&nbsp;"
+
+                }
+            },
+            "paging": true,
+            "autoWidth": false,
+            "info": true,
+            "lengthChange": false,
+            "pageLength": 3,
+            "procession": true,
+            "searching": false,
+            "serverSide": true,
+            "deferRender": true,
+            "pagingType": "full_numbers",
+            "ajax": function (data, callback, settings) {
+                var param = userMange.getQueryCondition(data);
+                $.ajax({
+                    type: "post",
+                    url: "/EventList.do",
+                    data: param,
+                    dataType: "JSON",
+                    success: function (result) {
+//封装返回数据
+                        var returnData = {};
+                        returnData.draw = result.draw;
+                        returnData.recordsTotal = result.recordsTotal;//总记录数
+                        returnData.recordsFiltered = result.recordsFiltered;
+                        returnData.data = result.data;
+//调用DataTables提供的callback方法，代表数据已封装完成并传回DataTables进行渲染
+//此时的数据需确保正确无误，异常判断应在执行此回调前自行处理完毕
+                        callback(returnData);
+                    }
+                })
+            },
+            "columns": [
+                {"data": "keyword", "orderable": false,
+                    render: function (data, type, row){
+                    return  "<a href='comments?hoteventsid="+ row.id +"'>"+ data + "</a>"
+                    }},
+                {"data": "searchsum", "orderable": false},
+                {
+                    "data": "createdate", "orderable": true, render: function (data, type, row) {
+                        var d = new Date(data);
+                        return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+                    }
+                }]
+        });
+
+        $("input[name='button']").click(function () {
+            table.draw();
+        })
+    });
+</script>
+</body>
+</html>
